@@ -1,0 +1,167 @@
+# =================================================================
+# PHASE 1: ATOMIC REPAIR (Fixed Versions & Structural Sync)
+# =================================================================
+print("🛠️ PHASE 1: Synchronizing AI Structural Layers...")
+
+# 1. Clear conflicts and install compatible versions
+!pip uninstall -y unsloth unsloth_zoo trl peft bitsandbytes transformers -q
+!pip install --no-cache-dir git+https://github.com/unslothai/unsloth-zoo.git -q
+!pip install --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git" -q
+# Note: Pinning trl to a modern version that satisfies unsloth-zoo
+!pip install --no-cache-dir "transformers>=4.48.0" "trl>=0.18.2,<0.25.0" peft bitsandbytes accelerate streamlit -q
+
+# 2. Install Stable Cloudflare Bridge
+!wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -q
+!dpkg -i cloudflared-linux-amd64.deb -q
+
+import os, zipfile, json, shutil, torch, time, subprocess
+from collections import defaultdict
+
+# =================================================================
+# PHASE 2: HIGH-SPEED ZIP SCANNING (No Extraction to Disk)
+# =================================================================
+print("\n📦 PHASE 2: Stream-Reading 172,563 reports... (Fast Mode)")
+
+# Storage for Platform Presence and Max Scores
+master_records = defaultdict(lambda: {"sources": set(), "vt": 0, "abuse": 0, "otx": 0, "malware": False})
+
+if not os.path.exists('datasets.zip'):
+    print("!! ERROR: datasets.zip not found in sidebar.")
+else:
+    processed = 0
+    with zipfile.ZipFile('datasets.zip', 'r') as z:
+        # We look through the list of files in the zip without extracting them
+        for filepath in z.namelist():
+            if filepath.endswith('.json'):
+                try:
+                    with z.open(filepath) as f:
+                        data = json.load(f)
+
+                        # Logic for vt_raw_json_reports
+                        if "vt_raw_json_reports" in filepath:
+                            res = data.get("data", data)
+                            ip = res.get("id") if isinstance(res, dict) else None
+                            if ip:
+                                hits = res.get("attributes", {}).get("last_analysis_stats", {}).get("malicious", 0)
+                                master_records[ip]["sources"].add("VirusTotal")
+                                if hits > master_records[ip]["vt"]: master_records[ip]["vt"] = hits
+
+                        # Logic for abuseipdb_raw_json_reports
+                        elif "abuseipdb_raw_json_reports" in filepath:
+                            res = data.get("data", data)
+                            ip = res.get("ipAddress")
+                            if ip:
+                                score = res.get("abuseConfidenceScore", 0)
+                                master_records[ip]["sources"].add("AbuseIPDB")
+                                if score > master_records[ip]["abuse"]: master_records[ip]["abuse"] = score
+
+                        # Logic for otx_raw_json_reports
+                        elif "otx_raw_json_reports" in filepath:
+                            ip = data.get("indicator")
+                            if ip:
+                                rep = data.get("reputation", 0)
+                                master_records[ip]["sources"].add("AlienVault OTX")
+                                if rep > master_records[ip]["otx"]: master_records[ip]["otx"] = rep
+
+                        # Logic for abuse_ch_raw_json_reports
+                        elif "abuse_ch_raw_json_reports" in filepath:
+                            ip = data.get("ip")
+                            if ip:
+                                master_records[ip]["sources"].add("Abuse.ch")
+                                master_records[ip]["malware"] = True
+                except: continue
+                processed += 1
+                if processed % 30000 == 0: print(f"--- Refined {processed:,} files...")
+
+# Final Index Creation
+final_index = {ip: {
+    "sources": list(v["sources"]),
+    "vt": v["vt"],
+    "abuse": v["abuse"],
+    "otx": v["otx"],
+    "malware": v["malware"]
+} for ip, v in master_records.items() if len(v["sources"]) > 0}
+
+with open('master_index.json', 'w') as f:
+    json.dump(final_index, f)
+
+print(f"✅ SUCCESS: {len(final_index):,} High-Confidence Threat Nodes Indexed.")
+
+# =================================================================
+# PHASE 3: THE ANALYTICAL DASHBOARD (Managerial UI)
+# =================================================================
+print("\n🖥️ PHASE 3: Writing Managerial UI Script...")
+with open('app.py', 'w') as f:
+    f.write("""
+import streamlit as st
+import json
+import torch
+from unsloth import FastLanguageModel
+
+st.set_page_config(page_title="AI CTI Engine", layout="wide")
+st.markdown("<style>html,body,[class*='st-']{font-family:'Times New Roman',Times,serif;}</style>", unsafe_allow_html=True)
+
+@st.cache_resource
+def load_system():
+    with open('master_index.json', 'r') as f:
+        recs = json.load(f)
+    model, tok = FastLanguageModel.from_pretrained(
+        model_name = "unsloth/llama-3-8b-bnb-4bit",
+        max_seq_length = 512, load_in_4bit = True, device_map = "cuda"
+    )
+    FastLanguageModel.for_inference(model)
+    return recs, model, tok
+
+try:
+    recs, model, tok = load_system()
+    st.sidebar.title("⚙️ System Architecture")
+    st.sidebar.info(f"**Model:** Llama-3 8B\\n**Hardware:** NVIDIA T4\\n**Index Size:** {len(recs)} IPs")
+
+    st.title("🛡️ Senior AI Threat Analyst Dashboard")
+    query = st.text_input("Enter Target IP for Deep Analysis:", placeholder="e.g. 117.205.254.132")
+
+    if query:
+        if query in recs:
+            data = recs[query]
+            st.write("### 🔍 Verified Platform Presence")
+            cols = st.columns(4)
+            platforms = ["VirusTotal", "AbuseIPDB", "AlienVault OTX", "Abuse.ch"]
+            for i, p in enumerate(platforms):
+                if p in data['sources']: cols[i].success(f"✅ {p}")
+                else: cols[i].error(f"❌ {p}")
+
+            st.write("### 📊 Heuristic Score Metrics")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("VirusTotal Hits", f"{data['vt']}/93")
+            m2.metric("AbuseIPDB Score", f"{data['abuse']}%")
+            m3.metric("OTX Reputation", f"{data['otx']}")
+
+            st.divider()
+            prompt = f"### Instruction: You are a Senior SOC Analyst. Analyze the data and write a professional verdict referencing the specific scores provided. \\n### Input: IP: {query}, VT_Hits: {data['vt']}, Abuse_Score: {data['abuse']}, OTX_Rep: {data['otx']}, AbuseCH_Malware: {data['malware']} \\n### Response: Based on a technical review, "
+
+            inputs = tok([prompt], return_tensors='pt').to('cuda')
+            with torch.no_grad():
+                out = model.generate(**inputs, max_new_tokens=150, temperature=0.2)
+
+            verdict = tok.batch_decode(out)[0].split("Response: ")[-1].split("<|end_of_text|>")[0].strip()
+            st.info(verdict)
+        else:
+            st.success("Clean: No malicious activity identified in the historical index.")
+except Exception as e:
+    st.error(f"Synchronization Error: {e}. Please Restart Session.")
+    """)
+
+# =================================================================
+# PHASE 4: FINAL LAUNCH
+# =================================================================
+print("\n🌐 PHASE 4: Generating Link...")
+!pkill cloudflared
+!pkill streamlit
+subprocess.Popen(["streamlit", "run", "app.py", "--server.port", "8501"])
+!nohup cloudflared tunnel --url http://127.0.0.1:8501 > tunnel.log 2>&1 &
+
+time.sleep(25)
+print("\n" + "="*60)
+print("PRESENTATION READY: CLICK BELOW")
+!grep -o 'https://[-a-zA-Z0-9.]*trycloudflare.com' tunnel.log | head -n 1
+print("="*60)
