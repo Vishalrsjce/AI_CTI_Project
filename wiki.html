@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Autonomous CTI Analysis Engine - Weakypedia</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f6f6f6; margin: 0; display: flex; justify-content: center; color: #202122; }
+        .container { background-color: white; width: 85%; max-width: 1100px; padding: 40px; border: 1px solid #a2a9b1; margin-top: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 40px; }
+        
+        /* Wikipedia Header Style */
+        h1 { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; border-bottom: 1px solid #a2a9b1; margin-bottom: 0.25em; font-weight: normal; font-size: 1.8rem; }
+        .subtitle { font-size: 0.8rem; color: #54595d; margin-bottom: 20px; }
+        
+        /* Infobox Styling */
+        .infobox { float: right; width: 300px; border: 1px solid #a2a9b1; background-color: #f8f9fa; margin: 0 0 1em 1em; padding: 5px; font-size: 0.85em; }
+        .infobox-title { text-align: center; font-weight: bold; background-color: #cedff2; padding: 8px; font-size: 1.1em; }
+        .infobox table { width: 100%; border-collapse: collapse; }
+        .infobox th { text-align: left; width: 40%; padding: 4px; vertical-align: top; border-top: 1px solid #a2a9b1; }
+        .infobox td { padding: 4px; border-top: 1px solid #a2a9b1; }
+
+        /* Infobox Image specifically for figure_4_1.png */
+        .infobox-image-container { text-align: center; padding: 10px 0; background: #fff; }
+        .infobox-image-container img { 
+            max-width: 280px; 
+            height: auto; 
+            border: 1px solid #ccc;
+            border-radius: 2px;
+        }
+        .infobox-caption { font-size: 0.8em; color: #555; padding-top: 5px; }
+
+        /* Content Styling */
+        .section-header { border-bottom: 1px solid #a2a9b1; margin-top: 1.5em; font-weight: bold; font-size: 1.4em; }
+        p { line-height: 1.6; margin: 0.5em 0 1em 0; }
+        ul { line-height: 1.6; }
+        
+        /* Links section */
+        .external-links { background-color: #f8f9fa; border: 1px solid #a2a9b1; padding: 15px; margin-top: 20px; }
+        .link-item { color: #0645ad; text-decoration: none; font-weight: bold; }
+        .link-item:hover { text-decoration: underline; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #0645ad; text-decoration: none; font-size: 0.9rem; }
+        
+        .toc { background: #f8f9fa; border: 1px solid #a2a9b1; padding: 10px; width: fit-content; min-width: 200px; font-size: 0.9rem; margin-bottom: 20px; }
+        .toc-title { font-weight: bold; text-align: center; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Back to Presentation</a>
+    <div class="subtitle">From Weakypedia, the free technical encyclopedia</div>
+    <h1>Autonomous CTI Analysis Engine</h1>
+
+    <!-- Infobox -->
+    <table class="infobox">
+        <tr><th colspan="2" class="infobox-title">Project: SecIntel AI</th></tr>
+        <tr>
+            <td colspan="2" class="infobox-image-container">
+                <!-- FIGURE 4.1 ADDED HERE -->
+                <img src="PPT_PICS/figure_4_1.png" alt="AI CTI Engine Dashboard">
+                <div class="infobox-caption">Llama-3 Generative Reasoning Dashboard</div>
+            </td>
+        </tr>
+        <tr><th>Developer</th><td>Vishal R.</td></tr>
+        <tr><th>Core Model</th><td>Llama-3 8B (4-bit)</td></tr>
+        <tr><th>Dataset Size</th><td>172,563 Raw Reports</td></tr>
+        <tr><th>Unique Actors</th><td>90,013 Profiles</td></tr>
+        <tr><th>Stack</th><td>Python, Streamlit, Cloudflare</td></tr>
+        <tr><th>Optimization</th><td>O(1) Hash-Mapping</td></tr>
+    </table>
+
+    <div class="toc">
+        <div class="toc-title">Contents</div>
+        <ol>
+            <li>Overview</li>
+            <li>Methodology</li>
+            <li>Performance</li>
+            <li>External Resources</li>
+        </ol>
+    </div>
+
+    <p>
+        The <b>Autonomous CTI Analysis Engine</b> is a high-performance cybersecurity framework designed to automate Tier-1 SOC (Security Operations Center) triage. By leveraging Large Language Models (LLMs) and deterministic data refinement, it consolidates fragmented threat intelligence from sources like VirusTotal and AbuseIPDB into a unified, actionable index.
+    </p>
+
+    <div class="section-header">Methodology</div>
+    <p>
+        The engine employs a multi-stage pipeline to handle the "Data Avalanche":
+    </p>
+    <ul>
+        <li><b>Heuristic Refinement:</b> Distills raw JSON logs by 85%, removing redundant metadata.</li>
+        <li><b>Schema Normalization:</b> Converts disparate data formats into a single, high-fidelity master object.</li>
+        <li><b>Generative Reasoning:</b> Uses Llama-3 to interpret complex threat scores and provide human-readable mitigation strategies.</li>
+    </ul>
+
+    <div class="section-header">Performance Metrics</div>
+    <p>
+        Moving from legacy sequential file scanning to an optimized hash-mapped index resulted in a <b>100,000x speed increase</b> in data retrieval:
+    </p>
+    <ul>
+        <li><b>Legacy Search Time:</b> ~120 Seconds per IP</li>
+        <li><b>Optimized Search Time:</b> < 0.001 Seconds</li>
+    </ul>
+
+    <div class="section-header">External Resources & Documentation</div>
+    <div class="external-links">
+        <ul>
+            <li><b>Source Code:</b> <a href="https://github.com/Vishalrsjce/AI_CTI_Project" class="link-item" target="_blank">GitHub Repository</a></li>
+            <li><b>Frontend Design:</b> <a href="https://vishalrsjce.github.io/SecIntel-AI-Platform-Overhaul-and-Design/" class="link-item" target="_blank">SecIntel Platform Design</a></li>
+            <li><b>Research Datasets:</b> <a href="https://drive.google.com/drive/folders/1u64C-3ldEKadFXYt4_p_Q2aqUPK89CNi?usp=sharing" class="link-item" target="_blank">Google Drive Datasets</a></li>
+        </ul>
+    </div>
+
+</div>
+
+</body>
+</html>
